@@ -1,7 +1,7 @@
-INSERT INTO [User] (UserID, UserName, Email, Account)
+INSERT INTO [User] (UserID, UserName, Email, Account, PasswordHash, PasswordSalt)
 VALUES
-('A1236456789', N'王小明', 'test@email.com', '1111999666'),
-('B1234567890', N'陳小華', 'demo@email.com', '2222888899');
+('A1236456789', N'王小明', 'test@email.com', '1111999666', 'f4YROx08By4yb0uJjJG4nHz5U+2YwdQhP8E41fGdfrI=', 'nY8bx2TrSB/YQ3IcSUQh6A=='),
+('B1234567890', N'陳小華', 'demo@email.com', '2222888899', 'Dm+GzjVCaA3vDTwD5fcM4lyVqB8xSGh0MM6Yp7vV4R0=', 'tTc9u6Yvfu6B6x8xRzYJ/w==');
 
 INSERT INTO Product (ProductName, Price, FeeRate)
 VALUES

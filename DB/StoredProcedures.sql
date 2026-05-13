@@ -24,6 +24,58 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER PROCEDURE SP_User_Register
+    @UserID NVARCHAR(20),
+    @UserName NVARCHAR(100),
+    @Email NVARCHAR(256),
+    @Account NVARCHAR(20),
+    @PasswordHash NVARCHAR(256),
+    @PasswordSalt NVARCHAR(256)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM [User] WHERE UserID = @UserID)
+    BEGIN
+        RAISERROR('UserID already exists', 16, 1);
+        RETURN;
+    END
+
+    INSERT INTO [User] (UserID, UserName, Email, Account, PasswordHash, PasswordSalt)
+    VALUES (@UserID, @UserName, @Email, @Account, @PasswordHash, @PasswordSalt);
+END;
+GO
+
+CREATE OR ALTER PROCEDURE SP_User_ExistsByUserId
+    @UserID NVARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT CASE WHEN EXISTS (SELECT 1 FROM [User] WHERE UserID = @UserID) THEN 1 ELSE 0 END;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE SP_User_ExistsByEmail
+    @Email NVARCHAR(256)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT CASE WHEN EXISTS (SELECT 1 FROM [User] WHERE Email = @Email) THEN 1 ELSE 0 END;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE SP_User_Login
+    @Email NVARCHAR(256)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP 1 UserID, UserName, Email, Account, PasswordHash, PasswordSalt
+    FROM [User]
+    WHERE Email = @Email;
+END;
+GO
+
 CREATE OR ALTER PROCEDURE SP_LikeList_Create
     @UserID NVARCHAR(20),
     @ProductNo INT,
