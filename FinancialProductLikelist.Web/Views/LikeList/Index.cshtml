@@ -1,0 +1,49 @@
+@model IReadOnlyList<FinancialProductLikelist.Models.LikeListItem>
+@{
+    ViewData["Title"] = "Like List";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Like List</h1>
+    <a class="btn btn-primary" asp-action="Create">Add Item</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Fee Rate</th>
+                <th>Order Qty</th>
+                <th>Total Amount</th>
+                <th>Total Fee</th>
+                <th>Account</th>
+                <th>Email</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.ProductName</td>
+                    <td>@item.Price</td>
+                    <td>@item.FeeRate</td>
+                    <td>@item.OrderQty</td>
+                    <td>@item.TotalAmount</td>
+                    <td>@item.TotalFee</td>
+                    <td>@item.Account</td>
+                    <td>@item.Email</td>
+                    <td class="text-nowrap">
+                        <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@item.Sn">Edit</a>
+                        <form asp-action="Delete" asp-route-id="@item.Sn" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
