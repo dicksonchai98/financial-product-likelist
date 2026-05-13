@@ -61,6 +61,11 @@ public sealed class LikeListServiceTests
 
         public List<Product> Products { get; } = [];
 
+        public IReadOnlyList<Product> GetProducts() => Products;
+
+        public Product? GetProductByNo(int productNo)
+            => Products.FirstOrDefault(x => x.No == productNo);
+
         public LikeListItem Create(string userId, LikeListItem item)
         {
             var product = Products.FirstOrDefault(x =>

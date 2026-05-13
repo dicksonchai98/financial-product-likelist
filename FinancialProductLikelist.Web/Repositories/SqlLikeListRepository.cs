@@ -43,6 +43,48 @@ public sealed class SqlLikeListRepository : ILikeListRepository
         }
     }
 
+    public IReadOnlyList<Product> GetProducts()
+    {
+        using var connection = new SqlConnection(_connectionString);
+        connection.Open();
+        using var cmd = connection.CreateCommand();
+        cmd.CommandType = CommandType.Text;
+        cmd.CommandText = "SELECT No, ProductName, Price, FeeRate FROM Product ORDER BY ProductName";
+        using var reader = cmd.ExecuteReader();
+        var products = new List<Product>();
+        while (reader.Read())
+        {
+            products.Add(new Product(
+                reader.GetInt32(0),
+                reader.GetString(1),
+                reader.GetDecimal(2),
+                reader.GetDecimal(3)));
+        }
+
+        return products;
+    }
+
+    public Product? GetProductByNo(int productNo)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        connection.Open();
+        using var cmd = connection.CreateCommand();
+        cmd.CommandType = CommandType.Text;
+        cmd.CommandText = "SELECT No, ProductName, Price, FeeRate FROM Product WHERE No = @No";
+        cmd.Parameters.AddWithValue("@No", productNo);
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read())
+        {
+            return null;
+        }
+
+        return new Product(
+            reader.GetInt32(0),
+            reader.GetString(1),
+            reader.GetDecimal(2),
+            reader.GetDecimal(3));
+    }
+
     public IReadOnlyList<LikeListItem> GetByUserId(string userId)
     {
         using var connection = new SqlConnection(_connectionString);

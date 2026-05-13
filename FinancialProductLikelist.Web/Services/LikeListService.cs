@@ -33,6 +33,12 @@ public sealed class LikeListService
     public IReadOnlyList<LikeListItem> GetByUserId(string userId)
         => _repository.GetByUserId(userId);
 
+    public IReadOnlyList<Product> GetProducts()
+        => _repository.GetProducts();
+
+    public Product? GetProductByNo(int productNo)
+        => _repository.GetProductByNo(productNo);
+
     public LikeListItem Update(string userId, int sn, LikeListItemInput input)
     {
         Validate(input);

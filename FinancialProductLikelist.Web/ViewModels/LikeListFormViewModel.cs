@@ -1,10 +1,16 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FinancialProductLikelist.ViewModels;
 
 public sealed class LikeListFormViewModel : IValidatableObject
 {
+    public sealed record ProductOption(int No, string ProductName, decimal Price, decimal FeeRate);
+
     public int Sn { get; set; }
+    public int ProductNo { get; set; }
+    public List<SelectListItem> Products { get; set; } = [];
+    public List<ProductOption> ProductCatalog { get; set; } = [];
 
     [Required]
     [Display(Name = "Product Name")]

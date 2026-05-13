@@ -1,48 +1,102 @@
 @model FinancialProductLikelist.ViewModels.LikeListFormViewModel
 @{
     ViewData["Title"] = "Create Like Item";
+    var catalog = System.Text.Json.JsonSerializer.Serialize(Model.ProductCatalog);
 }
 
-<h1 class="h3 mb-3">Create Like Item</h1>
-
-<form asp-action="Create" method="post" class="row g-3">
-    @Html.AntiForgeryToken()
-    <div class="col-md-6">
-        <label asp-for="ProductName" class="form-label"></label>
-        <input asp-for="ProductName" class="form-control" />
-        <span asp-validation-for="ProductName" class="text-danger"></span>
-    </div>
-    <div class="col-md-3">
-        <label asp-for="Price" class="form-label"></label>
-        <input asp-for="Price" class="form-control" />
-        <span asp-validation-for="Price" class="text-danger"></span>
-    </div>
-    <div class="col-md-3">
-        <label asp-for="FeeRate" class="form-label"></label>
-        <input asp-for="FeeRate" class="form-control" />
-        <span asp-validation-for="FeeRate" class="text-danger"></span>
-    </div>
-    <div class="col-md-4">
-        <label asp-for="OrderQty" class="form-label"></label>
-        <input asp-for="OrderQty" class="form-control" />
-        <span asp-validation-for="OrderQty" class="text-danger"></span>
-    </div>
-    <div class="col-md-4">
-        <label asp-for="Account" class="form-label"></label>
-        <input asp-for="Account" class="form-control" />
-        <span asp-validation-for="Account" class="text-danger"></span>
-    </div>
-    <div class="col-md-4">
-        <label asp-for="Email" class="form-label"></label>
-        <input asp-for="Email" class="form-control" />
-        <span asp-validation-for="Email" class="text-danger"></span>
-    </div>
-    <div class="col-12">
-        <button type="submit" class="btn btn-primary">Create</button>
-        <a asp-action="Index" class="btn btn-secondary">Back</a>
-    </div>
-</form>
+<div class="form-page">
+    <h1 class="h3 mb-3">Create Like Item</h1>
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <div class="mb-3">
+            <label asp-for="ProductNo" class="form-label">Product</label>
+            <select asp-for="ProductNo" asp-items="Model.Products" class="form-select">
+                <option value="">-- Select Product --</option>
+            </select>
+            <span asp-validation-for="ProductNo" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="ProductName" class="form-label"></label>
+            <input asp-for="ProductName" class="form-control" readonly />
+            <span asp-validation-for="ProductName" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Price" class="form-label"></label>
+            <input asp-for="Price" class="form-control" readonly />
+            <span asp-validation-for="Price" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="FeeRate" class="form-label"></label>
+            <input asp-for="FeeRate" class="form-control" readonly />
+            <span asp-validation-for="FeeRate" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="OrderQty" class="form-label"></label>
+            <input asp-for="OrderQty" class="form-control" />
+            <span asp-validation-for="OrderQty" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Account" class="form-label"></label>
+            <input asp-for="Account" class="form-control" readonly />
+            <span asp-validation-for="Account" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Total Amount (Preview)</label>
+            <input id="PreviewTotalAmount" class="form-control" readonly />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Total Fee (Preview)</label>
+            <input id="PreviewTotalFee" class="form-control" readonly />
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Create</button>
+            <a asp-action="Index" class="btn btn-secondary">Back</a>
+        </div>
+    </form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const catalog = @Html.Raw(catalog);
+            const productSelect = document.getElementById("ProductNo");
+            const productName = document.getElementById("ProductName");
+            const price = document.getElementById("Price");
+            const feeRate = document.getElementById("FeeRate");
+            const orderQty = document.getElementById("OrderQty");
+            const totalAmount = document.getElementById("PreviewTotalAmount");
+            const totalFee = document.getElementById("PreviewTotalFee");
+
+            function recalcPreview() {
+                const p = Number(price.value || 0);
+                const f = Number(feeRate.value || 0);
+                const q = Number(orderQty.value || 0);
+                const amount = p * q;
+                const fee = amount * f;
+                totalAmount.value = amount ? amount.toFixed(2) : "0.00";
+                totalFee.value = fee ? fee.toFixed(2) : "0.00";
+            }
+
+            function fillFromSelection() {
+                const selectedNo = Number(productSelect.value || 0);
+                const selected = catalog.find(x => x.No === selectedNo);
+                if (!selected) {
+                    productName.value = "";
+                    price.value = "";
+                    feeRate.value = "";
+                    recalcPreview();
+                    return;
+                }
+                productName.value = selected.ProductName;
+                price.value = selected.Price;
+                feeRate.value = selected.FeeRate;
+                recalcPreview();
+            }
+
+            productSelect.addEventListener("change", fillFromSelection);
+            orderQty.addEventListener("input", recalcPreview);
+            fillFromSelection();
+        })();
+    </script>
 }

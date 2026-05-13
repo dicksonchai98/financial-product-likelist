@@ -46,7 +46,8 @@ public sealed class AccountController : Controller
         {
             new(ClaimTypes.NameIdentifier, user.UserID),
             new(ClaimTypes.Name, user.UserName),
-            new(ClaimTypes.Email, user.Email)
+            new(ClaimTypes.Email, user.Email),
+            new("account", user.Account)
         };
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
