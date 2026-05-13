@@ -7,7 +7,19 @@
     <h1 class="h3 mb-3">Register</h1>
     <form asp-action="Register" method="post">
         @Html.AntiForgeryToken()
-        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        @if (!ViewData.ModelState.IsValid)
+        {
+            var errors = ViewData.ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .Where(e => !string.IsNullOrWhiteSpace(e))
+                .Distinct()
+                .ToList();
+            if (errors.Count > 0)
+            {
+                <div class="alert alert-danger mb-3" role="alert">@string.Join(" ", errors)</div>
+            }
+        }
         <div class="mb-3">
             <label asp-for="UserName" class="form-label"></label>
             <input asp-for="UserName" class="form-control" />

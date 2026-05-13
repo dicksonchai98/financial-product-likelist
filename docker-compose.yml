@@ -4,11 +4,11 @@ services:
     container_name: financial-sqlserver
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "__CHANGE_ME__"
+      MSSQL_SA_PASSWORD: "${DB_SA_PASSWORD}"
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"__CHANGE_ME__\" -Q \"SELECT 1\" || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"${DB_SA_PASSWORD}\" -Q \"SELECT 1\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -20,7 +20,7 @@ services:
       dockerfile: FinancialProductLikelist.Web/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=FinancialProductLikeListDb;User Id=sa;Password=__CHANGE_ME__;TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=True"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=${DB_NAME};User Id=sa;Password=${DB_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=True"
     depends_on:
       sqlserver:
         condition: service_healthy
@@ -47,12 +47,11 @@ services:
       - ./DB:/scripts:ro
     command: >
       /bin/bash -c "
-      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P '__CHANGE_ME__' -Q \"IF DB_ID(N'FinancialProductLikeListDb') IS NULL CREATE DATABASE [FinancialProductLikeListDb];\" &&
-      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P '__CHANGE_ME__' -d FinancialProductLikeListDb -i /scripts/DDL.sql &&
-      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P '__CHANGE_ME__' -d FinancialProductLikeListDb -i /scripts/StoredProcedures.sql &&
-      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P '__CHANGE_ME__' -d FinancialProductLikeListDb -i /scripts/DML.sql
+      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P '${DB_SA_PASSWORD}' -Q \"IF DB_ID(N'${DB_NAME}') IS NULL CREATE DATABASE [${DB_NAME}];\" &&
+      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P '${DB_SA_PASSWORD}' -d ${DB_NAME} -i /scripts/DDL.sql &&
+      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P '${DB_SA_PASSWORD}' -d ${DB_NAME} -i /scripts/StoredProcedures.sql &&
+      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P '${DB_SA_PASSWORD}' -d ${DB_NAME} -i /scripts/DML.sql
       "
 
 volumes:
   sqlserver_data:
-

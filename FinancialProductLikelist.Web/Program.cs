@@ -1,3 +1,4 @@
+using FinancialProductLikelist.Infrastructure;
 using FinancialProductLikelist.Repositories;
 using FinancialProductLikelist.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -22,6 +23,8 @@ builder.Services.AddScoped<LikeListService>();
 builder.Services.AddScoped<IUserRepository, SqlUserRepository>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddSingleton<PasswordHasher>();
+
+DatabaseInitializer.EnsureInitialized(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 

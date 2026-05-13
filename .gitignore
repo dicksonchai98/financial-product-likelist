@@ -2,3 +2,6 @@ bin/
 obj/
 .vs/
 TestResults/
+.env
+.tmp_build_verify/
+FinancialProductLikelist.Web/appsettings.Development.json
