@@ -22,7 +22,7 @@
 - 後端金額重算：`TotalAmount = Price * OrderQty`、`TotalFee = TotalAmount * FeeRate`
 - 安全基線：Anti-Forgery、參數化 SP 呼叫、Razor 預設 HTML Encode
 
-## 實作題需求對照（依「【新進.Net】玉山銀行軟體工程師實作題 II」）
+## 實作題需求對照
 
 1. 新增喜好金融商品
 
@@ -194,4 +194,3 @@ FinancialProductLikelist.Web/DB/
 nginx/
 docker-compose.yml
 ```
-
