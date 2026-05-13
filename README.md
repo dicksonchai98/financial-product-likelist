@@ -1,71 +1,71 @@
-# Financial Product Like List
+# 金融商品喜好清單系統
 
-## Overview
+## 專案概述
 
-Financial Product Like List 是一個以 ASP.NET Core MVC 實作的金融商品喜好清單系統。  
-系統支援帳號註冊/登入（Cookie Authentication）、Like List CRUD、資料隔離（僅可操作自己的資料）、以及後端金額重算規則。
+本專案是使用 ASP.NET Core MVC 建置的金融商品喜好清單系統。  
+系統支援帳號註冊/登入（Cookie Authentication）、Like List 新增/查詢/修改/刪除、資料隔離（只能操作自己的資料）、以及後端金額重算規則。
 
-本專案同時提供：
+本專案提供：
 
 - Docker Compose 一鍵啟動（`sqlserver + db-init + app + nginx`）
-- SQL 腳本初始化（`DB/DDL.sql`、`DB/DML.sql`、`DB/StoredProcedures.sql`）
-- Stored Procedure-based repository 存取策略
+- 資料庫初始化腳本（`DB/DDL.sql`、`DB/DML.sql`、`DB/StoredProcedures.sql`）
+- 以 Stored Procedure 為主的資料存取策略
 - 基本測試專案（xUnit）
 
-## Features
+## 主要功能
 
 - 帳號系統：註冊、登入、登出
-- 權限控管：`[Authorize]` 保護 Like List 頁面
+- 權限控管：使用 `[Authorize]` 保護 Like List 頁面
 - 喜好清單：新增、查詢、修改、刪除
-- 商品選取：Add/Edit 可直接選 Product 並自動帶入 `Price/FeeRate`
-- 伺服器端重算：
+- 商品選取：新增/編輯時可選擇商品並自動帶入 `Price/FeeRate`
+- 後端重算：
   - `TotalAmount = Price * OrderQty`
   - `TotalFee = TotalAmount * FeeRate`
 - 安全基線：
-  - Cookie Auth
+  - Cookie 驗證
   - Anti-forgery token
   - 參數化 SQL / Stored Procedure
-  - Razor encode
+  - Razor 預設輸出編碼
 
-## Tech Stack
+## 技術棧
 
-- Backend: ASP.NET Core MVC (.NET 10)
-- Data: SQL Server + Stored Procedures
-- Infra: Docker Compose + Nginx
-- Test: xUnit
+- 後端：ASP.NET Core MVC（.NET 10）
+- 資料層：SQL Server + Stored Procedures
+- 基礎設施：Docker Compose + Nginx
+- 測試：xUnit
 
-## Architecture
+## 系統架構
 
 ```mermaid
 flowchart LR
-    Browser --> Nginx
+    瀏覽器 --> Nginx
     Nginx --> ASPNET[ASP.NET Core MVC]
     ASPNET --> SQL[(SQL Server)]
     ASPNET --> SP[Stored Procedures]
 ```
 
-## Folder Structure
+## 目錄結構
 
 ```txt
 financial-product-likelist/
-├─ FinancialProductLikelist.Web/     # ASP.NET Core MVC app
-├─ FinancialProductLikelist.Tests/   # xUnit tests
+├─ FinancialProductLikelist.Web/     # ASP.NET Core MVC 主程式
+├─ FinancialProductLikelist.Tests/   # xUnit 測試
 ├─ DB/                               # DDL / DML / StoredProcedures
-├─ nginx/                            # nginx reverse proxy config
-├─ openspec/                         # change artifacts (proposal/design/specs/tasks)
-├─ docs/                             # design docs
+├─ nginx/                            # Nginx 反向代理設定
+├─ openspec/                         # 規格與變更文件（proposal/design/specs/tasks）
+├─ docs/                             # 設計文件
 └─ docker-compose.yml
 ```
 
-## Installation & Startup
+## 安裝與啟動
 
-### Option A: Docker Compose (Recommended)
+### 方式一：Docker Compose（建議）
 
-#### Prerequisites
+#### 前置需求
 
-- Docker Desktop (Compose v2)
+- Docker Desktop（Compose v2）
 
-#### Start
+#### 啟動
 
 ```bash
 docker compose up -d --build
@@ -75,17 +75,17 @@ docker compose up -d --build
 
 1. 啟動 SQL Server
 2. 執行 `db-init` 套用 `DB` 腳本
-3. 啟動 ASP.NET Core app
+3. 啟動 ASP.NET Core 應用程式
 4. 啟動 Nginx（對外 `8080`）
 
-#### URLs
+#### 服務網址
 
-- App (Nginx): `http://localhost:8080`
-- Login: `http://localhost:8080/Account/Login`
-- Register: `http://localhost:8080/Account/Register`
-- Like List: `http://localhost:8080/LikeList`
+- 系統首頁（Nginx）：`http://localhost:8080`
+- 登入頁：`http://localhost:8080/Account/Login`
+- 註冊頁：`http://localhost:8080/Account/Register`
+- Like List：`http://localhost:8080/LikeList`
 
-#### Stop
+#### 關閉
 
 ```bash
 docker compose down
@@ -93,14 +93,14 @@ docker compose down
 
 ---
 
-### Option B: Local Run (without Docker)
+### 方式二：本機啟動（不使用 Docker）
 
-#### Prerequisites
+#### 前置需求
 
 - .NET SDK 10
-- SQL Server / LocalDB
+- SQL Server 或 LocalDB
 
-#### 1) Initialize database
+#### 1) 初始化資料庫
 
 請依序執行：
 
@@ -108,7 +108,7 @@ docker compose down
 2. `DB/StoredProcedures.sql`
 3. `DB/DML.sql`
 
-#### 2) Configure connection string
+#### 2) 設定連線字串
 
 檔案：`FinancialProductLikelist.Web/appsettings.json`
 
@@ -120,33 +120,31 @@ docker compose down
 }
 ```
 
-#### 3) Run web app
+#### 3) 啟動網站
 
 ```bash
 dotnet run --project FinancialProductLikelist.Web/FinancialProductLikelist.csproj
 ```
 
-## Usage Notes
+## 使用說明
 
-- 預設首頁即 `LikeList`（程式路由設定為 `{controller=LikeList}/{action=Index}`）
-- 未登入存取 LikeList 時會導向 `/Account/Login`
-- 建議先註冊新帳號再登入使用
+- 預設首頁為 `LikeList`（路由：`{controller=LikeList}/{action=Index}`）
+- 未登入存取 LikeList 會導向 `/Account/Login`
+- 建議先註冊新帳號，再登入使用
 
-## Testing
+## 測試
 
 ```bash
 dotnet test FinancialProductLikelist.Tests/FinancialProductLikelist.Tests.csproj
 ```
 
-## Current Scope
+## 目前範圍（MVP）
 
-目前屬於 MVP 型態，重點在：
+- 帳號驗證流程（註冊/登入/登出）
+- Like List CRUD 流程
+- 商品選取 + 後端金額/手續費重算
+- Docker 化本地開發環境
 
-- Account auth flow
-- Like List CRUD flow
-- Product selection + server-side amount/fee calculation
-- Dockerized local environment
-
-## Author
+## 作者
 
 - Dickson
