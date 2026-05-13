@@ -62,7 +62,11 @@ public sealed class LikeListService
 
     public void Delete(string userId, int sn)
     {
-        _repository.Delete(userId, sn);
+        var deleted = _repository.Delete(userId, sn);
+        if (!deleted)
+        {
+            throw new InvalidOperationException("Like list record not found.");
+        }
     }
 
     private static (decimal totalAmount, decimal totalFee) ComputeTotals(decimal price, decimal feeRate, int orderQty)

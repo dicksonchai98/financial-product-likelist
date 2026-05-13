@@ -24,13 +24,13 @@ public sealed class SqlLikeListRepository : ILikeListRepository
         {
             var productNo = EnsureProduct(connection, transaction, item);
             using var cmd = CreateCommand(connection, transaction, "SP_LikeList_Create");
-            cmd.Parameters.AddWithValue("@UserID", userId);
-            cmd.Parameters.AddWithValue("@ProductNo", productNo);
-            cmd.Parameters.AddWithValue("@OrderQty", item.OrderQty);
-            cmd.Parameters.AddWithValue("@Account", item.Account);
-            cmd.Parameters.AddWithValue("@TotalFee", item.TotalFee);
-            cmd.Parameters.AddWithValue("@TotalAmount", item.TotalAmount);
-            cmd.Parameters.AddWithValue("@Email", item.Email);
+            AddNVarChar(cmd, "@UserID", 20, userId);
+            AddInt(cmd, "@ProductNo", productNo);
+            AddInt(cmd, "@OrderQty", item.OrderQty);
+            AddNVarChar(cmd, "@Account", 20, item.Account);
+            AddDecimal(cmd, "@TotalFee", 18, 2, item.TotalFee);
+            AddDecimal(cmd, "@TotalAmount", 18, 2, item.TotalAmount);
+            AddNVarChar(cmd, "@Email", 256, item.Email);
 
             var newSn = Convert.ToInt32(cmd.ExecuteScalar());
             transaction.Commit();
@@ -71,7 +71,7 @@ public sealed class SqlLikeListRepository : ILikeListRepository
         using var cmd = connection.CreateCommand();
         cmd.CommandType = CommandType.Text;
         cmd.CommandText = "SELECT No, ProductName, Price, FeeRate FROM Product WHERE No = @No";
-        cmd.Parameters.AddWithValue("@No", productNo);
+        AddInt(cmd, "@No", productNo);
         using var reader = cmd.ExecuteReader();
         if (!reader.Read())
         {
@@ -90,7 +90,7 @@ public sealed class SqlLikeListRepository : ILikeListRepository
         using var connection = new SqlConnection(_connectionString);
         connection.Open();
         using var cmd = CreateCommand(connection, transaction: null, "SP_LikeList_GetList");
-        cmd.Parameters.AddWithValue("@UserID", userId);
+        AddNVarChar(cmd, "@UserID", 20, userId);
         using var reader = cmd.ExecuteReader();
         var results = new List<LikeListItem>();
         while (reader.Read())
@@ -115,15 +115,19 @@ public sealed class SqlLikeListRepository : ILikeListRepository
         {
             var productNo = EnsureProduct(connection, transaction, item);
             using var cmd = CreateCommand(connection, transaction, "SP_LikeList_Update");
-            cmd.Parameters.AddWithValue("@SN", item.Sn);
-            cmd.Parameters.AddWithValue("@UserID", userId);
-            cmd.Parameters.AddWithValue("@ProductNo", productNo);
-            cmd.Parameters.AddWithValue("@OrderQty", item.OrderQty);
-            cmd.Parameters.AddWithValue("@Account", item.Account);
-            cmd.Parameters.AddWithValue("@TotalFee", item.TotalFee);
-            cmd.Parameters.AddWithValue("@TotalAmount", item.TotalAmount);
-            cmd.Parameters.AddWithValue("@Email", item.Email);
-            cmd.ExecuteNonQuery();
+            AddInt(cmd, "@SN", item.Sn);
+            AddNVarChar(cmd, "@UserID", 20, userId);
+            AddInt(cmd, "@ProductNo", productNo);
+            AddInt(cmd, "@OrderQty", item.OrderQty);
+            AddNVarChar(cmd, "@Account", 20, item.Account);
+            AddDecimal(cmd, "@TotalFee", 18, 2, item.TotalFee);
+            AddDecimal(cmd, "@TotalAmount", 18, 2, item.TotalAmount);
+            AddNVarChar(cmd, "@Email", 256, item.Email);
+            var affectedRows = cmd.ExecuteNonQuery();
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("Like list record not found.");
+            }
             transaction.Commit();
             return item with { UserId = userId, ProductNo = productNo };
         }
@@ -138,10 +142,26 @@ public sealed class SqlLikeListRepository : ILikeListRepository
     {
         using var connection = new SqlConnection(_connectionString);
         connection.Open();
+
+        // Stored procedures use SET NOCOUNT ON, so ExecuteNonQuery() is not a
+        // reliable affected-row signal. Check existence before delete.
+        using (var existsCmd = connection.CreateCommand())
+        {
+            existsCmd.CommandType = CommandType.Text;
+            existsCmd.CommandText = "SELECT 1 FROM LikeList WHERE SN = @SN AND UserID = @UserID";
+            AddInt(existsCmd, "@SN", sn);
+            AddNVarChar(existsCmd, "@UserID", 20, userId);
+            if (existsCmd.ExecuteScalar() is null)
+            {
+                return false;
+            }
+        }
+
         using var cmd = CreateCommand(connection, transaction: null, "SP_LikeList_Delete");
-        cmd.Parameters.AddWithValue("@SN", sn);
-        cmd.Parameters.AddWithValue("@UserID", userId);
-        return cmd.ExecuteNonQuery() > 0;
+        AddInt(cmd, "@SN", sn);
+        AddNVarChar(cmd, "@UserID", 20, userId);
+        cmd.ExecuteNonQuery();
+        return true;
     }
 
     private static SqlCommand CreateCommand(SqlConnection connection, SqlTransaction? transaction, string storedProcedure)
@@ -174,9 +194,27 @@ public sealed class SqlLikeListRepository : ILikeListRepository
     private static int EnsureProduct(SqlConnection connection, SqlTransaction transaction, LikeListItem item)
     {
         using var upsertProduct = CreateCommand(connection, transaction, "SP_Product_Upsert");
-        upsertProduct.Parameters.AddWithValue("@ProductName", item.ProductName);
-        upsertProduct.Parameters.AddWithValue("@Price", item.Price);
-        upsertProduct.Parameters.AddWithValue("@FeeRate", item.FeeRate);
+        AddNVarChar(upsertProduct, "@ProductName", 200, item.ProductName);
+        AddDecimal(upsertProduct, "@Price", 18, 2, item.Price);
+        AddDecimal(upsertProduct, "@FeeRate", 9, 4, item.FeeRate);
         return Convert.ToInt32(upsertProduct.ExecuteScalar());
+    }
+
+    private static void AddNVarChar(SqlCommand cmd, string name, int size, string value)
+    {
+        cmd.Parameters.Add(name, SqlDbType.NVarChar, size).Value = value;
+    }
+
+    private static void AddInt(SqlCommand cmd, string name, int value)
+    {
+        cmd.Parameters.Add(name, SqlDbType.Int).Value = value;
+    }
+
+    private static void AddDecimal(SqlCommand cmd, string name, byte precision, byte scale, decimal value)
+    {
+        var param = cmd.Parameters.Add(name, SqlDbType.Decimal);
+        param.Precision = precision;
+        param.Scale = scale;
+        param.Value = value;
     }
 }

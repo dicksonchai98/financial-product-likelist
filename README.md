@@ -1,150 +1,211 @@
-# 金融商品喜好清單系統
+# Financial Product Like List MVC
 
-## 專案概述
-
-本專案是使用 ASP.NET Core MVC 建置的金融商品喜好清單系統。  
-系統支援帳號註冊/登入（Cookie Authentication）、Like List 新增/查詢/修改/刪除、資料隔離（只能操作自己的資料）、以及後端金額重算規則。
-
-本專案提供：
-
-- Docker Compose 一鍵啟動（`sqlserver + db-init + app + nginx`）
-- 資料庫初始化腳本（`DB/DDL.sql`、`DB/DML.sql`、`DB/StoredProcedures.sql`）
-- 以 Stored Procedure 為主的資料存取策略
-- 基本測試專案（xUnit）
-
-## 主要功能
-
-- 帳號系統：註冊、登入、登出
-- 權限控管：使用 `[Authorize]` 保護 Like List 頁面
-- 喜好清單：新增、查詢、修改、刪除
-- 商品選取：新增/編輯時可選擇商品並自動帶入 `Price/FeeRate`
-- 後端重算：
-  - `TotalAmount = Price * OrderQty`
-  - `TotalFee = TotalAmount * FeeRate`
-- 安全基線：
-  - Cookie 驗證
-  - Anti-forgery token
-  - 參數化 SQL / Stored Procedure
-  - Razor 預設輸出編碼
+這是一個使用 ASP.NET Core MVC 與 SQL Server 開發的金融商品喜好清單範例，並透過 Docker Compose 進行容器化部署。
 
 ## 技術棧
 
-- 後端：ASP.NET Core MVC（.NET 10）
-- 資料層：SQL Server + Stored Procedures
-- 基礎設施：Docker Compose + Nginx
-- 測試：xUnit
+- ASP.NET Core MVC (.NET 10)
+- ADO.NET (`Microsoft.Data.SqlClient`)
+- SQL Server 2022
+- Stored Procedures
+- Nginx（反向代理）
+- Docker Compose
+- xUnit（單元測試）
 
-## 系統架構
+## 功能特色（Features）
 
-```mermaid
-flowchart LR
-    瀏覽器 --> Nginx
-    Nginx --> ASPNET[ASP.NET Core MVC]
-    ASPNET --> SQL[(SQL Server)]
-    ASPNET --> SP[Stored Procedures]
+- 會員註冊（UserName + Email + Password）
+- 會員登入/登出（Cookie Authentication）
+- 喜好清單功能：新增、列表、編輯、刪除
+- 商品主檔共用：建立清單時會自動對應/建立商品資料
+- 權限控制：未登入不可存取 Like List
+- 後端金額重算：`TotalAmount = Price * OrderQty`、`TotalFee = TotalAmount * FeeRate`
+- 安全基線：Anti-Forgery、參數化 SP 呼叫、Razor 預設 HTML Encode
+
+## 後續優化方向
+
+1. 架構優化：拆分 Query 與 Command
+- 現況：Service + Repository 已分層，但讀寫仍在同一 repository 介面。
+- 優化：改為 CQRS 風格（例如 Query Repository + Command Repository），讓邏輯更清晰、維護性更高。
+
+2. 驗證機制優化：補齊更細緻授權策略
+- 現況：使用 Cookie Authentication + `[Authorize]`。
+- 優化：可加入 policy-based authorization 與資源層授權，以便未來擴展多角色需求。
+
+3. 資料存取優化：統一參數與錯誤策略
+- 現況：已改用明確 SQL 型別參數，並補齊更新/刪除找不到資料的處理。
+- 優化：可再抽出共用 Command helper 與一致的 DB 例外映射規範。
+
+4. 可觀測性優化：補齊監控與告警
+- 現況：有基本錯誤頁與例外流程。
+- 優化：導入集中式 logging、metrics 與 tracing，建立 API latency/DB failure 告警。
+
+5. 安全性優化：生產環境密鑰管理
+- 現況：本機以 `appsettings` / `.env` 示範。
+- 優化：導入 Secret Manager / Vault，避免敏感資訊出現在設定檔。
+
+## 實作題需求對照（依「【新進.Net】玉山銀行軟體工程師實作題 II」）
+
+1. 新增喜好金融商品
+- 你怎麼做：
+  - 介面新增 Like Item（選商品、填購買數量）
+  - 產品名稱/價格/費率由產品主檔帶入，後端重算總額與手續費
+- 實作位置：
+  - Controller：[LikeListController.cs](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Controllers\LikeListController.cs)
+  - Service：[LikeListService.cs](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Services\LikeListService.cs)
+  - Repository：[SqlLikeListRepository.cs](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Repositories\SqlLikeListRepository.cs)
+
+2. 查詢喜好金融商品清單
+- 你怎麼做：
+  - 清單顯示商品名稱、價格、手續費率、購買數量、預計扣款總額、總手續費、扣款帳號、Email
+- 實作位置：
+  - View：[Views/LikeList/Index.cshtml](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Views\LikeList\Index.cshtml)
+  - SP：[StoredProcedures.sql](C:\Users\dickson\Desktop\financial-product-likelist\DB\StoredProcedures.sql)
+
+3. 刪除喜好金融商品資訊
+- 你怎麼做：
+  - 清單頁可刪除，僅可刪除目前登入者自己的資料
+  - 刪除失敗（資料不存在）會回友善訊息
+- 實作位置：
+  - Controller：[LikeListController.cs](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Controllers\LikeListController.cs)
+  - Service：[LikeListService.cs](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Services\LikeListService.cs)
+
+4. 更改喜好金融商品資訊
+- 你怎麼做：
+  - 提供編輯頁修改商品、購買數量，並由後端重新計算總額與手續費
+  - 更新不到資料時回 404
+- 實作位置：
+  - Controller：[LikeListController.cs](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Controllers\LikeListController.cs)
+  - Service：[LikeListService.cs](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Services\LikeListService.cs)
+
+5. 系統架構要求（C# / ASP.NET 10+ MVC、三層式）
+- 你怎麼做：
+  - C# + ASP.NET Core MVC (.NET 10)
+  - 三層式：Nginx（Web Server）+ ASP.NET App（Application Server）+ SQL Server（RDBMS）
+  - 後端分層：
+    - 展示層：Controllers + Views
+    - 業務層：Services
+    - 資料層：Repositories + Stored Procedures
+- 實作位置：
+  - 啟動設定：[Program.cs](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Program.cs)
+  - 容器架構：[docker-compose.yml](C:\Users\dickson\Desktop\financial-product-likelist\docker-compose.yml)
+
+6. 技術要求對照
+- 使用 Bootstrap 支援 RWD
+  - 做法：Layout 引入 Bootstrap CSS/JS，頁面使用 Bootstrap 元件
+  - 位置：[Views/Shared/_Layout.cshtml](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Views\Shared\_Layout.cshtml)
+- 透過 Stored Procedure 存取資料庫
+  - 做法：LikeList/User/Product 主流程走 SP（`SP_LikeList_*`、`SP_User_*`、`SP_Product_Upsert`）
+  - 位置：[StoredProcedures.sql](C:\Users\dickson\Desktop\financial-product-likelist\DB\StoredProcedures.sql)
+- 多表異動需 Transaction
+  - 做法：新增與更新時，`Product upsert + LikeList` 包在同一 transaction
+  - 位置：[SqlLikeListRepository.cs](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Repositories\SqlLikeListRepository.cs)
+- DDL/DML 放在 `DB` 資料夾
+  - 做法：`DDL.sql`、`DML.sql`、`StoredProcedures.sql` 皆已放置
+  - 位置：`DB/`
+- 防止 SQL Injection 與 XSS
+  - SQL Injection：以 SP + typed parameters 呼叫，不拼接字串 SQL
+  - XSS：Razor 預設輸出編碼 + DataAnnotations 驗證 + Anti-Forgery Token
+
+7. 密碼安全（加鹽雜湊）
+- 你怎麼做：
+  - 使用 `PasswordHasher`（PBKDF2）產生 hash/salt 儲存，登入時驗證 hash
+- 實作位置：
+  - [PasswordHasher.cs](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Services\PasswordHasher.cs)
+  - [AuthService.cs](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Services\AuthService.cs)
+
+## 啟動前需要準備什麼
+
+請先安裝以下工具：
+
+1. Git
+2. Docker Desktop（需支援 Docker Compose）
+3. .NET SDK 10.0（只有在不使用 Docker 本機啟動時需要）
+
+## 下載專案
+
+```bash
+git clone <your-repo-url>
+cd financial-product-likelist
+cp .env.example .env
 ```
 
-## 目錄結構
+## 啟動方式（建議使用 Docker）
 
-```txt
-financial-product-likelist/
-├─ FinancialProductLikelist.Web/     # ASP.NET Core MVC 主程式
-├─ FinancialProductLikelist.Tests/   # xUnit 測試
-├─ DB/                               # DDL / DML / StoredProcedures
-├─ nginx/                            # Nginx 反向代理設定
-├─ openspec/                         # 規格與變更文件（proposal/design/specs/tasks）
-├─ docs/                             # 設計文件
-└─ docker-compose.yml
+啟動所有服務：
+
+```bash
+docker compose up --build
 ```
 
-## 安裝與啟動
-
-### 方式一：Docker Compose（建議）
-
-#### 前置需求
-
-- Docker Desktop（Compose v2）
-
-#### 啟動
+背景執行：
 
 ```bash
 docker compose up -d --build
 ```
 
-此指令會：
-
-1. 啟動 SQL Server
-2. 執行 `db-init` 套用 `DB` 腳本
-3. 啟動 ASP.NET Core 應用程式
-4. 啟動 Nginx（對外 `8080`）
-
-#### 服務網址
-
-- 系統首頁（Nginx）：`http://localhost:8080`
-- 登入頁：`http://localhost:8080/Account/Login`
-- 註冊頁：`http://localhost:8080/Account/Register`
-- Like List：`http://localhost:8080/LikeList`
-
-#### 關閉
+停止服務：
 
 ```bash
 docker compose down
 ```
 
----
+## 服務位址
 
-### 方式二：本機啟動（不使用 Docker）
+- 網站（經 Nginx）：`http://localhost:8080`
+- SQL Server：`localhost:1433`
+  - 帳號：`sa`
+  - 密碼：請使用 `.env` 的 `SA_PASSWORD`
+  - 資料庫：`FinancialProductLikeListDb`
 
-#### 前置需求
+## 資料庫初始化
 
-- .NET SDK 10
-- SQL Server 或 LocalDB
-
-#### 1) 初始化資料庫
-
-請依序執行：
+使用 Docker Compose 時，`db-init` 會自動依序執行：
 
 1. `DB/DDL.sql`
 2. `DB/StoredProcedures.sql`
 3. `DB/DML.sql`
 
-#### 2) 設定連線字串
+## 不使用 Docker 的本機啟動方式（Local .NET）
 
-檔案：`FinancialProductLikelist.Web/appsettings.json`
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=FinancialProductLikeListDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
-  }
-}
-```
-
-#### 3) 啟動網站
+1. 先啟動本機 SQL Server（或使用 Docker 的 SQL Server）。
+2. 設定 `FinancialProductLikelist.Web/appsettings.Development.json` 的連線字串與密碼。
+3. 執行：
 
 ```bash
+dotnet restore FinancialProductLikelist.Web/FinancialProductLikelist.csproj
 dotnet run --project FinancialProductLikelist.Web/FinancialProductLikelist.csproj
 ```
 
-## 使用說明
+## 如何確認啟動成功
 
-- 預設首頁為 `LikeList`（路由：`{controller=LikeList}/{action=Index}`）
-- 未登入存取 LikeList 會導向 `/Account/Login`
-- 建議先註冊新帳號，再登入使用
-
-## 測試
+1. 開啟 `http://localhost:8080/Account/Login`。
+2. 註冊新帳號並登入後進入 `LikeList`。
+3. 查看容器狀態：
 
 ```bash
-dotnet test FinancialProductLikelist.Tests/FinancialProductLikelist.Tests.csproj
+docker compose ps
 ```
 
-## 目前範圍（MVP）
+4. 查看服務日誌：
 
-- 帳號驗證流程（註冊/登入/登出）
-- Like List CRUD 流程
-- 商品選取 + 後端金額/手續費重算
-- Docker 化本地開發環境
+```bash
+docker compose logs -f
+```
 
-## 作者
+## 專案結構
 
-- Dickson
+```text
+FinancialProductLikelist.Web/
+  Controllers/
+  Infrastructure/
+  Models/
+  Repositories/
+  Services/
+  ViewModels/
+  Views/
+FinancialProductLikelist.Tests/
+DB/
+nginx/
+docker-compose.yml
+```

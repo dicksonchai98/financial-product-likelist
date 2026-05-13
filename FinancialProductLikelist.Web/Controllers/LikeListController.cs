@@ -21,18 +21,27 @@ public sealed class LikeListController : Controller
     [HttpGet]
     public IActionResult Index()
     {
-        var userId = GetUserId();
-        var items = _service.GetByUserId(userId);
+        if (!TryGetUserId(out var userId))
+        {
+            return Challenge();
+        }
+
+        var items = _service.GetByUserId(userId!);
         return View(items);
     }
 
     [HttpGet]
     public IActionResult Create()
     {
+        if (!TryGetUserAccount(out var account) || !TryGetUserEmail(out var email))
+        {
+            return Challenge();
+        }
+
         var model = new LikeListFormViewModel
         {
-            Account = GetUserAccount(),
-            Email = GetUserEmail()
+            Account = account!,
+            Email = email!
         };
         PopulateProducts(model);
         return View(model);
@@ -42,8 +51,13 @@ public sealed class LikeListController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult Create(LikeListFormViewModel model)
     {
-        model.Account = GetUserAccount();
-        model.Email = GetUserEmail();
+        if (!TryGetUserAccount(out var account) || !TryGetUserEmail(out var email) || !TryGetUserId(out var userId))
+        {
+            return Challenge();
+        }
+
+        model.Account = account!;
+        model.Email = email!;
         ApplySelectedProduct(model);
         RevalidateServerAssignedFields(model);
         if (!ModelState.IsValid)
@@ -52,16 +66,19 @@ public sealed class LikeListController : Controller
             return View(model);
         }
 
-        var userId = GetUserId();
-        _service.Create(userId, ToInput(model));
+        _service.Create(userId!, ToInput(model));
         return RedirectToAction(nameof(Index));
     }
 
     [HttpGet]
     public IActionResult Edit(int id)
     {
-        var userId = GetUserId();
-        var item = _service.GetByUserId(userId).FirstOrDefault(x => x.Sn == id);
+        if (!TryGetUserId(out var userId) || !TryGetUserAccount(out var account) || !TryGetUserEmail(out var email))
+        {
+            return Challenge();
+        }
+
+        var item = _service.GetByUserId(userId!).FirstOrDefault(x => x.Sn == id);
         if (item is null)
         {
             return NotFound();
@@ -74,9 +91,9 @@ public sealed class LikeListController : Controller
             ProductName = item.ProductName,
             Price = item.Price,
             FeeRate = item.FeeRate,
-            Account = GetUserAccount(),
+            Account = account!,
             OrderQty = item.OrderQty,
-            Email = GetUserEmail()
+            Email = email!
         };
         PopulateProducts(model);
         return View(model);
@@ -86,8 +103,13 @@ public sealed class LikeListController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult Edit(int id, LikeListFormViewModel model)
     {
-        model.Account = GetUserAccount();
-        model.Email = GetUserEmail();
+        if (!TryGetUserAccount(out var account) || !TryGetUserEmail(out var email) || !TryGetUserId(out var userId))
+        {
+            return Challenge();
+        }
+
+        model.Account = account!;
+        model.Email = email!;
         ApplySelectedProduct(model);
         RevalidateServerAssignedFields(model);
         if (!ModelState.IsValid)
@@ -97,8 +119,15 @@ public sealed class LikeListController : Controller
             return View(model);
         }
 
-        var userId = GetUserId();
-        _service.Update(userId, id, ToInput(model));
+        try
+        {
+            _service.Update(userId!, id, ToInput(model));
+        }
+        catch (InvalidOperationException ex) when (ex.Message == "Like list record not found.")
+        {
+            return NotFound();
+        }
+
         return RedirectToAction(nameof(Index));
     }
 
@@ -106,19 +135,38 @@ public sealed class LikeListController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult Delete(int id)
     {
-        var userId = GetUserId();
-        _service.Delete(userId, id);
+        if (!TryGetUserId(out var userId))
+        {
+            return Challenge();
+        }
+
+        try
+        {
+            _service.Delete(userId!, id);
+            TempData["StatusMessage"] = "Item deleted.";
+        }
+        catch (InvalidOperationException ex) when (ex.Message == "Like list record not found.")
+        {
+            TempData["ErrorMessage"] = "Item not found or already removed.";
+        }
+
         return RedirectToAction(nameof(Index));
     }
 
-    private string GetUserId()
-        => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "A1236456789";
+    private bool TryGetUserId(out string? userId)
+        => TryGetClaim(ClaimTypes.NameIdentifier, out userId);
 
-    private string GetUserAccount()
-        => User.FindFirstValue("account") ?? "1111999666";
+    private bool TryGetUserAccount(out string? account)
+        => TryGetClaim("account", out account);
 
-    private string GetUserEmail()
-        => User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+    private bool TryGetUserEmail(out string? email)
+        => TryGetClaim(ClaimTypes.Email, out email);
+
+    private bool TryGetClaim(string claimType, out string? claimValue)
+    {
+        claimValue = User.FindFirstValue(claimType);
+        return !string.IsNullOrWhiteSpace(claimValue);
+    }
 
     private static LikeListItemInput ToInput(LikeListFormViewModel model)
     {
