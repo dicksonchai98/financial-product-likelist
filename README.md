@@ -40,7 +40,7 @@
   - 清單顯示商品名稱、價格、手續費率、購買數量、預計扣款總額、總手續費、扣款帳號、Email
 - 實作位置：
   - View：[Views/LikeList/Index.cshtml](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Views\LikeList\Index.cshtml)
-  - SP：[StoredProcedures.sql](C:\Users\dickson\Desktop\financial-product-likelist\DB\StoredProcedures.sql)
+  - SP：[StoredProcedures.sql](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\DB\StoredProcedures.sql)
 
 3. 刪除喜好金融商品資訊
 
@@ -80,13 +80,13 @@
   - 位置：[Views/Shared/\_Layout.cshtml](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Views\Shared_Layout.cshtml)
 - 透過 Stored Procedure 存取資料庫
   - 做法：LikeList/User/Product 主流程走 SP（`SP_LikeList_*`、`SP_User_*`、`SP_Product_Upsert`）
-  - 位置：[StoredProcedures.sql](C:\Users\dickson\Desktop\financial-product-likelist\DB\StoredProcedures.sql)
+  - 位置：[StoredProcedures.sql](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\DB\StoredProcedures.sql)
 - 多表異動需 Transaction
   - 做法：新增與更新時，`Product upsert + LikeList` 包在同一 transaction
   - 位置：[SqlLikeListRepository.cs](C:\Users\dickson\Desktop\financial-product-likelist\FinancialProductLikelist.Web\Repositories\SqlLikeListRepository.cs)
 - DDL/DML 放在 `DB` 資料夾
   - 做法：`DDL.sql`、`DML.sql`、`StoredProcedures.sql` 皆已放置
-  - 位置：`DB/`
+  - 位置：`FinancialProductLikelist.Web/DB/`
 - 防止 SQL Injection 與 XSS
   - SQL Injection：以 SP + typed parameters 呼叫，不拼接字串 SQL
   - XSS：Razor 預設輸出編碼 + DataAnnotations 驗證 + Anti-Forgery Token
@@ -147,9 +147,9 @@ docker compose down
 
 使用 Docker Compose 時，`db-init` 會自動依序執行：
 
-1. `DB/DDL.sql`
-2. `DB/StoredProcedures.sql`
-3. `DB/DML.sql`
+1. `FinancialProductLikelist.Web/DB/DDL.sql`
+2. `FinancialProductLikelist.Web/DB/StoredProcedures.sql`
+3. `FinancialProductLikelist.Web/DB/DML.sql`
 
 ## 不使用 Docker 的本機啟動方式（Local .NET）
 
@@ -190,7 +190,8 @@ FinancialProductLikelist.Web/
   ViewModels/
   Views/
 FinancialProductLikelist.Tests/
-DB/
+FinancialProductLikelist.Web/DB/
 nginx/
 docker-compose.yml
 ```
+

@@ -59,7 +59,7 @@ public static class DatabaseInitializer
 
         var contentRoot = AppContext.BaseDirectory;
         var solutionRoot = Path.GetFullPath(Path.Combine(contentRoot, "..", "..", "..", ".."));
-        var dbDir = Path.Combine(solutionRoot, "DB");
+        var dbDir = Path.Combine(solutionRoot, "FinancialProductLikelist.Web", "DB");
         var scripts = new[]
         {
             Path.Combine(dbDir, "DDL.sql"),
