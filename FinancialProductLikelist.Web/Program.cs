@@ -8,10 +8,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie();
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.AccessDeniedPath = "/Account/Login";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+    });
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<ILikeListRepository, SqlLikeListRepository>();
 builder.Services.AddScoped<LikeListService>();
+builder.Services.AddScoped<IUserRepository, SqlUserRepository>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddSingleton<PasswordHasher>();
 
 var app = builder.Build();
 
